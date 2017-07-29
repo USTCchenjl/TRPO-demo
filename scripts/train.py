@@ -16,6 +16,7 @@ from worker import Worker
 
 GAME = 'Pendulum-v0'
 env = gym.make(GAME)
+#env = RunEnv(visualize=False)
 
 N_S = env.observation_space.shape[0]
 N_A = env.action_space.shape[0]
@@ -42,18 +43,17 @@ def main(argv):
 	# Create worker graphs
 	workers = []
 	for worker_id in range(NUM_WORKERS):
-		if worker_id == 0:
+		if worker_id == 1:
 			visualize = True
 		else:
 			visualize = False
 
 		worker = Worker(
 			name="W_{}".format(worker_id),
-			env=gym.make(GAME).unwrapped,
+			env=gym.make(GAME).unwrapped, #RunEnv(args.visualize),
 			policy_net=policy_net,
 			value_net=value_net,
 			discount_factor = 0.99,
-			update_global_iter=args.update_global_iter,
 			args=args)
 		workers.append(worker)
 

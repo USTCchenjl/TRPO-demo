@@ -6,8 +6,6 @@ def get_arguments(argv):
 
 	# Basic parameters
 	parser.add_argument('--max_global_steps', type=int, default=800)
-	parser.add_argument('--update_global_iter', type=int, default=5)
-	parser.add_argument('--t_max', type=int, default=400)
 	parser.add_argument('--model_dir', type=str, default='../weights/')
 	parser.add_argument('--policy_rl', type=float, default=0.0001)
 	parser.add_argument('--value_rl', type=float, default=0.001)
@@ -21,7 +19,7 @@ def get_arguments(argv):
 	parser.add_argument('--reward_clip_val', default=1.0, type=float, help='Clip rewards outside of [-REWARD_CLIP, REWARD_CLIP]', dest='reward_clip_val')
 
 	#trpo args
-	parser.add_argument('--num_epochs', default=10, type=int, help='number of epochs for which to run TRPO', dest='num_epochs')
+	parser.add_argument('--num_epochs', default=1000, type=int, help='number of epochs for which to run TRPO', dest='num_epochs')
 	parser.add_argument('--episodes_per_batch', default=20, type=int, help='number of episodes to batch for TRPO updates', dest='episodes_per_batch')
 	parser.add_argument('--trpo_max_rollout', default=400, type=int, help='max rollout steps per trpo episode', dest='max_rollout')
 	parser.add_argument('--cg_subsample', default=0.1, type=float, help='rate at which to subsample data for TRPO conjugate gradient iteration', dest='cg_subsample')

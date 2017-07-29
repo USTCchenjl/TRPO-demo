@@ -33,15 +33,15 @@ class Worker(object):
 		discount_factor: Reward discount factor
 		max_global_steps: If set, stop coordinator when global_counter > max_global_steps
 	"""
-	def __init__(self, name, env, policy_net, value_net, discount_factor, update_global_iter, args):
+	def __init__(self, name, env, policy_net, value_net, discount_factor, args):
 		self.name = name
 		self.discount_factor = discount_factor
 		#self.max_global_steps = max_global_steps
-		self.update_global_iter = update_global_iter
 		self.global_step = tf.train.get_global_step()
 		self.shared_policy_net = policy_net
 		self.shared_value_net = value_net
 		self.env = env
+		self.model_dir = args.model_dir
 
 		#TRPO parameters
 		self.gamma = args.gamma
@@ -321,6 +321,21 @@ class Worker(object):
 	def _run_master(self, sess):
 		for epoch in range(self.num_epochs):
 			sess.run(self.restore_params_op)
+
+			# Saving model
+			if epoch%100 == 0 and epoch > 1:
+				print 'epoch: '+str(epoch)
+				print 'Saving model: ' + str(epoch) 
+				self.saver.save(sess, self.model_dir+'model_1.ckpt')
+			else:
+				print 'epoch: '+str(epoch)
+
+			# Restore model
+			if epoch == 0:
+				print 'epoch: '+str(epoch)
+				print 'Restoring model: ' + str(epoch)
+				self.saver.restore(sess, self.model_dir+'model.ckpt')
+
 			data = {
 				'state':     list(),
 				'pi':        list(),
@@ -337,7 +352,7 @@ class Worker(object):
 			#collect worker experience
 			episode_rewards = list()
 			for _ in xrange(self.episodes_per_batch):
-				print 'experience_get'
+				#print 'experience_get'
 				worker_data, reward = self.experience_queue.get()
 				episode_rewards.append(reward)
 
@@ -359,7 +374,7 @@ class Worker(object):
 			#	epoch+1, kl, mean_episode_reward, t1-t0, t2-t1))
 	def _run_worker(self, sess):
 		while True:
-			print 'task_get'
+			#print 'task_get'
 			signal = self.task_queue.get()
 			if signal == 'EXIT':
 				print 'EXIT'
@@ -412,5 +427,6 @@ class Worker(object):
 					self.task_queue.put('EXIT')
 			else:
 				self._run_worker(sess)
-		except:
+		except Exception,e:
+			print e.message
 			os._exit(0)
