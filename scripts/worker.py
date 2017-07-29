@@ -5,6 +5,7 @@ import itertools
 import collections
 import numpy as np
 import tensorflow as tf
+from multiprocessing import Process
 
 from estimators import *
 
@@ -20,7 +21,7 @@ def make_copy_params_op(v1_list, v2_list):
 
 	return update_ops
 
-class Worker(object):
+class Worker(Process):
 	"""
 	An TRPO worker thread. Runs episodes locally and updates global shared value and policy nets.
 
@@ -358,9 +359,9 @@ class Worker(object):
 	def _run_worker(self, sess):
 		while True:
 			signal = self.task_queue.get()
-			#if signal == 'EXIT':
-			#	print 'EXIT'
-			#	break
+			if signal == 'EXIT':
+				print 'EXIT'
+				break
 
 			sess.run(self.restore_params_op)
 			self.state = self.env.reset()
@@ -404,7 +405,7 @@ class Worker(object):
 	def run(self, sess, coord, saver, model_dir, t_max):
 		if self.name == 'W_0':
 			self._run_master(sess)
-			#for _ in xrange(self.num_actor_learners):
-			#	self.task_queue.put('EXIT')
+			for _ in xrange(self.num_actor_learners):
+				self.task_queue.put('EXIT')
 		else:
 			self._run_worker(sess)
