@@ -40,11 +40,26 @@ def main(argv):
 		value_net = ValueEstimator()
 
 	# Create worker graphs
-	
+	workers = []
+	for worker_id in range(NUM_WORKERS):
+		if worker_id == 0:
+			visualize = True
+		else:
+			visualize = False
+
+		worker = Worker(
+			name="W_{}".format(worker_id),
+			env=gym.make(GAME).unwrapped,
+			policy_net=policy_net,
+			value_net=value_net,
+			discount_factor = 0.99,
+			update_global_iter=args.update_global_iter,
+			args=args)
+		workers.append(worker)
 
 	with tf.Session() as sess:
 		sess.run(tf.global_variables_initializer())
-		#coord = tf.train.Coordinator()
+		coord = tf.train.Coordinator()
 
 		#print env.observation_space.shape[0], env.action_space.shape[0]
 
@@ -52,31 +67,16 @@ def main(argv):
 		#saver.restore(sess, args.model_dir+'model.ckpt')
 
 		# Start worker threads
-		workers = []
-		for worker_id in range(NUM_WORKERS):
-			if worker_id == 0:
-				visualize = True
-			else:
-				visualize = False
+		worker_threads = []
 
-			worker = Worker(
-				name="W_{}".format(worker_id),
-				env=gym.make(GAME).unwrapped,
-				policy_net=policy_net,
-				value_net=value_net,
-				discount_factor = 0.99,
-				update_global_iter=args.update_global_iter,
-				args=args)
-			workers.append(worker)
-			workers[-1].start()
+		for worker in workers:
+			worker_fn = lambda: worker.run(sess, num_workers=NUM_WORKERS)
+			t = threading.Thread(target=worker_fn)
+			t.start()
+			worker_threads.append(t)
 
-		try:
-	        for t in workers:
-	            t.join()
-	    except KeyboardInterrupt:
-	        #Terminate with extreme prejudice
-	        for t in actor_learners:
-	            t.terminate()
+		# Wait for all workers to finish
+		coord.join(worker_threads)
 
 if __name__ == '__main__':
 	main(sys.argv[1:])

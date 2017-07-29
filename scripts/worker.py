@@ -21,7 +21,7 @@ def make_copy_params_op(v1_list, v2_list):
 
 	return update_ops
 
-class Worker(Process):
+class Worker(object):
 	"""
 	An TRPO worker thread. Runs episodes locally and updates global shared value and policy nets.
 
@@ -337,6 +337,7 @@ class Worker(Process):
 			#collect worker experience
 			episode_rewards = list()
 			for _ in xrange(self.episodes_per_batch):
+				print 'experience_get'
 				worker_data, reward = self.experience_queue.get()
 				episode_rewards.append(reward)
 
@@ -358,6 +359,7 @@ class Worker(Process):
 			#	epoch+1, kl, mean_episode_reward, t1-t0, t2-t1))
 	def _run_worker(self, sess):
 		while True:
+			print 'task_get'
 			signal = self.task_queue.get()
 			if signal == 'EXIT':
 				print 'EXIT'
@@ -402,10 +404,13 @@ class Worker(Process):
 
 			self.experience_queue.put((data, episode_reward))
 
-	def run(self, sess, coord, saver, model_dir, t_max):
-		if self.name == 'W_0':
-			self._run_master(sess)
-			for _ in xrange(self.num_actor_learners):
-				self.task_queue.put('EXIT')
-		else:
-			self._run_worker(sess)
+	def run(self, sess, num_workers):
+		try:
+			if self.name == 'W_0':
+				self._run_master(sess)
+				for _ in xrange(num_workers):
+					self.task_queue.put('EXIT')
+			else:
+				self._run_worker(sess)
+		except:
+			os._exit(0)
